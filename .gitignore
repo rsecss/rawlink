@@ -33,6 +33,7 @@ pnpm-debug.log*
 
 # Tools
 .ace-tool/
+DEVLOG.md
 
 # Temp
 temp_clone/
