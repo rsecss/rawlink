@@ -1,0 +1,16 @@
+{
+  "name": "rawlink",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wxt",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "typecheck": "tsc --noEmit",
+    "postinstall": "wxt prepare"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "wxt": "^0.20.17"
+  }
+}

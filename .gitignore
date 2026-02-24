@@ -1,0 +1,38 @@
+# WXT
+.output/
+.wxt/
+
+# Dependencies
+node_modules/
+
+# Distribution
+dist/
+*.zip
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Tools
+.ace-tool/
+
+# Temp
+temp_clone/
