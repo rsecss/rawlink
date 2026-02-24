@@ -33,6 +33,7 @@ pnpm-debug.log*
 
 # Tools
 .ace-tool/
+.claude/settings.local.json
 DEVLOG.md
 
 # Temp
