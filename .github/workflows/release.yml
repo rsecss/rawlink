@@ -1,0 +1,127 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate version consistency
+        run: |
+          set -euo pipefail
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if [[ "$TAG_VERSION" != "$PKG_VERSION" ]]; then
+            echo "::error::版本不一致: tag=${TAG_VERSION}, package.json=${PKG_VERSION}"
+            exit 1
+          fi
+          echo "版本校验通过: ${TAG_VERSION}"
+
+      - name: Build & Zip
+        run: pnpm zip
+
+      - name: Verify ZIP artifact
+        run: |
+          shopt -s nullglob
+          files=(.output/*-chrome.zip)
+          if [[ ${#files[@]} -eq 0 ]]; then
+            echo "::error::未找到 Chrome 扩展 ZIP 产物"
+            exit 1
+          fi
+          echo "ZIP 产物: ${files[0]}"
+
+      - name: Generate release notes
+        run: |
+          set -euo pipefail
+          CURRENT_TAG="${GITHUB_REF_NAME}"
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 --match "v*" "${GITHUB_SHA}^" 2>/dev/null || true)
+
+          if [[ -n "$PREVIOUS_TAG" ]]; then
+            echo "变更范围: ${PREVIOUS_TAG}..${CURRENT_TAG}"
+          else
+            echo "首次发布，收集 ${CURRENT_TAG} 之前全部提交"
+          fi
+
+          python3 - "$CURRENT_TAG" "$PREVIOUS_TAG" <<'PYSCRIPT'
+          import re, subprocess, sys
+
+          current_tag, previous_tag = sys.argv[1], sys.argv[2] if len(sys.argv) > 2 and sys.argv[2] else ""
+          log_range = f"{previous_tag}..{current_tag}" if previous_tag else current_tag
+          subjects = subprocess.check_output(
+              ["git", "log", "--no-merges", "--pretty=format:%s", log_range],
+              text=True,
+          ).splitlines()
+
+          sections = {"feat": [], "fix": [], "perf": [], "refactor": [], "other": []}
+          cc_pattern = re.compile(r"^([a-zA-Z]+)(\([^)]+\))?!?:\s+(.+)$")
+
+          for s in subjects:
+              s = s.strip()
+              if not s:
+                  continue
+              m = cc_pattern.match(s)
+              if m and m.group(1).lower() in sections:
+                  sections[m.group(1).lower()].append(s)
+              else:
+                  sections["other"].append(s)
+
+          titles = [
+              ("feat", "✨ 新增"),
+              ("fix", "🐛 修复"),
+              ("perf", "⚡ 性能"),
+              ("refactor", "♻️ 重构"),
+              ("other", "📦 其他"),
+          ]
+
+          lines = []
+          for key, title in titles:
+              if not sections[key]:
+                  continue
+              lines.append(f"## {title}")
+              for item in sections[key]:
+                  lines.append(f"- {item}")
+              lines.append("")
+
+          if not lines:
+              lines = [f"## 📦 其他", f"- {current_tag} 发布", ""]
+
+          with open("release-notes.md", "w", encoding="utf-8") as f:
+              f.write("\n".join(lines).rstrip() + "\n")
+          PYSCRIPT
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          body_path: release-notes.md
+          files: .output/*-chrome.zip
