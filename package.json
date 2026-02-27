@@ -12,5 +12,10 @@
   "devDependencies": {
     "typescript": "^5.0.0",
     "wxt": "^0.20.17"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }
