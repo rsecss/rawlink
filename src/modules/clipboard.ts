@@ -2,7 +2,14 @@ const CHECK_ICON_SVG =
   '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="currentColor" style="color: #1a7f37"><path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z"/></svg>';
 
 let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
-let originalButtonHTML: string | null = null;
+let originalNodes: Node[] | null = null;
+
+/** Parse hardcoded SVG string via detached template (avoids innerHTML on live DOM). */
+function createSvgNode(svgHtml: string): Node {
+  const t = document.createElement('template');
+  t.innerHTML = svgHtml;
+  return t.content.firstChild!;
+}
 
 
 function fallbackCopy(text: string): boolean {
@@ -28,6 +35,7 @@ function fallbackCopy(text: string): boolean {
  * @returns 写入是否成功
  */
 export async function writeClipboard(text: string): Promise<boolean> {
+  if (!navigator.userActivation?.isActive) return false;
   try {
     await navigator.clipboard.writeText(text);
     return true;
@@ -45,16 +53,16 @@ export function showFeedback(button: HTMLButtonElement): void {
   if (feedbackTimer !== null) {
     clearTimeout(feedbackTimer);
   } else {
-    originalButtonHTML = button.innerHTML;
+    originalNodes = Array.from(button.childNodes, (n) => n.cloneNode(true));
   }
 
-  button.innerHTML = CHECK_ICON_SVG;
+  button.replaceChildren(createSvgNode(CHECK_ICON_SVG));
   button.title = '已复制!';
 
   feedbackTimer = setTimeout(() => {
-    if (originalButtonHTML !== null) {
-      button.innerHTML = originalButtonHTML;
-      originalButtonHTML = null;
+    if (originalNodes !== null) {
+      button.replaceChildren(...originalNodes);
+      originalNodes = null;
     }
     button.title = '';
     feedbackTimer = null;

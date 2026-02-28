@@ -3,9 +3,9 @@ import { toRawUrl } from '~/modules/url-parser';
 import {
   cleanup,
   findRawButton,
+  getInjectedButton,
   injectCopyButton,
   isInjected,
-  RAWLINK_ATTR,
 } from '~/modules/dom-injector';
 import { showFeedback, writeClipboard } from '~/modules/clipboard';
 
@@ -26,7 +26,7 @@ async function handleCopy(url: string): Promise<boolean> {
   const success = await writeClipboard(url);
   if (!success) return false;
 
-  const btn = document.querySelector<HTMLButtonElement>(`button[${RAWLINK_ATTR}]`);
+  const btn = getInjectedButton();
   if (btn !== null) showFeedback(btn);
 
   return true;
@@ -37,6 +37,7 @@ function waitForButton(ctx: ContentScriptContext): void {
   cancelWait?.(); // 取消上一次等待
 
   let done = false;
+  let scheduled = false;
 
   const stop = (): void => {
     if (done) return;
@@ -55,9 +56,14 @@ function waitForButton(ctx: ContentScriptContext): void {
     document.documentElement;
 
   const observer = new MutationObserver(() => {
-    if (done || findRawButton() === null) return;
-    tryInject();
-    if (isInjected()) stop();
+    if (done || scheduled) return;
+    scheduled = true;
+    queueMicrotask(() => {
+      scheduled = false;
+      if (done || findRawButton() === null) return;
+      tryInject();
+      if (isInjected()) stop();
+    });
   });
 
   observer.observe(target, { childList: true, subtree: true });
