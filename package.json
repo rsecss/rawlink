@@ -2,6 +2,7 @@
   "name": "rawlink",
   "version": "1.0.1",
   "private": true,
+  "packageManager": "pnpm@10.30.2",
   "scripts": {
     "dev": "wxt",
     "build": "wxt build",
@@ -10,8 +11,8 @@
     "postinstall": "wxt prepare"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
-    "wxt": "^0.20.17"
+    "typescript": "5.9.3",
+    "wxt": "0.20.17"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
