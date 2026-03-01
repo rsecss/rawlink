@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 
 # currentDate
-Today's date is 2026-02-18.
+Today's date is 2026-03-01.
 
 ---
 
@@ -137,3 +137,13 @@ export const RAWLINK_ATTR: string;
 
 - `main`：稳定发布版
 - `dev`：开发分支（当前活跃）
+
+---
+
+## 开发日志与文档同步
+
+- **日志路径：** `DEVLOG.md`（已从版本控制移除，仅本地保留）
+- **每次提交/发布前，必须同步更新以下内容：**
+  1. `DEVLOG.md` — 追加操作记录，使用标签（`[INFO]`/`[FIX]`/`[ERROR]`/`[TODO]`）+ 日期 + 关键细节
+  2. `CLAUDE.md` — 若涉及架构约束、模块接口、项目结构、开发命令等变更，同步更新对应章节
+  3. 代码注释 — 若公共 API 签名或行为变更，同步更新 JSDoc/TSDoc
